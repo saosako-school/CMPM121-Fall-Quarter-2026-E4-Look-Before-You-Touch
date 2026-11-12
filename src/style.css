@@ -63,7 +63,7 @@ body {
 /* Each panel swings toward the screen and slightly overlaps its edge. */
 .panel-left {
   transform-origin: right center;
-  transform: translateX(var(--panel-overlap)px) rotateY(var(--panel-tilt)deg);
+  transform: translateX(var(--panel-overlap)) rotateY(var(--panel-tilt));
 }
 
 .panel-right {
@@ -111,10 +111,13 @@ output {
 }
 
 .pip {
+  width: 22px;
   color: #ff5ea8;
 }
 
 .cell {
+  flex: 1;
+  border-radius: 2px;
   color: var(--lemon);
 }
 
@@ -124,7 +127,15 @@ output {
   box-shadow: var(--glow-shadow);
 }
 
+.pip.lit {
+  width: 22px;
+  clip-path: "polygon(50% 0, 100% 100%, 0 100%)";
+  background: currentColor;
+}
+
 .cell.lit {
+  flex: 1;
+  border-radius: 2px;
   background: currentColor;
 }
 
@@ -176,6 +187,13 @@ output {
   gap: 10px;
   font-size: 12px;
   color: var(--storm-grey);
+}
+
+.stop-dot {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
 }
 
 .stop[data-state="cleared"] {
