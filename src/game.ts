@@ -32,7 +32,19 @@ const STORY: [number, string][] = [
 const WARP_AT = 9;
 const CREDITS_AT = 11;
 const RETURN_AT = 18;
-
+interface WaveInfo {
+  baseSpawnTime: number;
+  numEnemies: number;
+  enemyType: string;
+  formation: string;
+  position: number;
+}
+interface Level {
+  name: string;
+  subtitle: string;
+  length: number;
+  waves: WaveInfo[];
+}
 /**
  * The whole game. mode is one of "title", "play", "attract" or "cutscene";
  * switching modes fades out and restarts this scene in the new mode.
@@ -61,7 +73,248 @@ export class GameScene extends Phaser.Scene implements Arena {
   private idle = 0;
   private leaving = false;
   private cutsceneAfterDemo = false;
-
+  private gameLevels: Level[] = [
+    {
+      name: "Outer Drift",
+      subtitle: "Scouts ahead",
+      length: 1560,
+      waves: [{
+        baseSpawnTime: 60,
+        numEnemies: 4,
+        enemyType: "drone",
+        formation: "line",
+        position: 240,
+      }, {
+        baseSpawnTime: 360,
+        numEnemies: 5,
+        enemyType: "drone",
+        formation: "vee",
+        position: 168,
+      }, {
+        baseSpawnTime: 660,
+        numEnemies: 5,
+        enemyType: "drone",
+        formation: "vee",
+        position: 312,
+      }, {
+        baseSpawnTime: 960,
+        numEnemies: 6,
+        enemyType: "drone",
+        formation: "line",
+        position: 240,
+      }, {
+        baseSpawnTime: 1200,
+        numEnemies: 4,
+        enemyType: "drone",
+        formation: "column",
+        position: 120,
+      }, {
+        baseSpawnTime: 1260,
+        numEnemies: 4,
+        enemyType: "drone",
+        formation: "column",
+        position: 360,
+      }],
+    },
+    {
+      name: "Shatter Belt",
+      subtitle: "Divers incoming",
+      length: 1800,
+      waves: [{
+        baseSpawnTime: 60,
+        numEnemies: 6,
+        enemyType: "drone",
+        formation: "vee",
+        position: 240,
+      }, {
+        baseSpawnTime: 300,
+        numEnemies: 4,
+        enemyType: "dart",
+        formation: "line",
+        position: 240,
+      }, {
+        baseSpawnTime: 600,
+        numEnemies: 5,
+        enemyType: "dart",
+        formation: "column",
+        position: 144,
+      }, {
+        baseSpawnTime: 720,
+        numEnemies: 5,
+        enemyType: "dart",
+        formation: "column",
+        position: 336,
+      }, {
+        baseSpawnTime: 1020,
+        numEnemies: 7,
+        enemyType: "drone",
+        formation: "line",
+        position: 240,
+      }, {
+        baseSpawnTime: 1140,
+        numEnemies: 5,
+        enemyType: "dart",
+        formation: "vee",
+        position: 240,
+      }, {
+        baseSpawnTime: 1440,
+        numEnemies: 6,
+        enemyType: "dart",
+        formation: "line",
+        position: 240,
+      }],
+    },
+    {
+      name: "Gun Lanes",
+      subtitle: "Turrets online",
+      length: 1920,
+      waves: [{
+        baseSpawnTime: 60,
+        numEnemies: 1,
+        enemyType: "turret",
+        formation: "line",
+        position: 240,
+      }, {
+        baseSpawnTime: 240,
+        numEnemies: 6,
+        enemyType: "drone",
+        formation: "vee",
+        position: 240,
+      }, {
+        baseSpawnTime: 540,
+        numEnemies: 2,
+        enemyType: "turret",
+        formation: "line",
+        position: 240,
+      }, {
+        baseSpawnTime: 840,
+        numEnemies: 6,
+        enemyType: "dart",
+        formation: "column",
+        position: 240,
+      }, {
+        baseSpawnTime: 1080,
+        numEnemies: 2,
+        enemyType: "turret",
+        formation: "line",
+        position: 240,
+      }, {
+        baseSpawnTime: 1140,
+        numEnemies: 6,
+        enemyType: "drone",
+        formation: "line",
+        position: 240,
+      }, {
+        baseSpawnTime: 1500,
+        numEnemies: 3,
+        enemyType: "turret",
+        formation: "line",
+        position: 240,
+      }],
+    },
+    {
+      name: "Lancer Gate",
+      subtitle: "Crossfire",
+      length: 1920,
+      waves: [{
+        baseSpawnTime: 60,
+        numEnemies: 4,
+        enemyType: "lancer",
+        formation: "pincer",
+        position: 0,
+      }, {
+        baseSpawnTime: 360,
+        numEnemies: 6,
+        enemyType: "dart",
+        formation: "vee",
+        position: 240,
+      }, {
+        baseSpawnTime: 600,
+        numEnemies: 6,
+        enemyType: "lancer",
+        formation: "pincer",
+        position: 0,
+      }, {
+        baseSpawnTime: 780,
+        numEnemies: 2,
+        enemyType: "turret",
+        formation: "line",
+        position: 240,
+      }, {
+        baseSpawnTime: 1140,
+        numEnemies: 6,
+        enemyType: "lancer",
+        formation: "pincer",
+        position: 0,
+      }, {
+        baseSpawnTime: 1260,
+        numEnemies: 8,
+        enemyType: "drone",
+        formation: "vee",
+        position: 240,
+      }, {
+        baseSpawnTime: 1560,
+        numEnemies: 8,
+        enemyType: "dart",
+        formation: "line",
+        position: 240,
+      }],
+    },
+    {
+      name: "Last Approach",
+      subtitle: "Everything they have",
+      length: 2040,
+      waves: [{
+        baseSpawnTime: 60,
+        numEnemies: 3,
+        enemyType: "turret",
+        formation: "line",
+        position: 240,
+      }, {
+        baseSpawnTime: 180,
+        numEnemies: 6,
+        enemyType: "lancer",
+        formation: "pincer",
+        position: 0,
+      }, {
+        baseSpawnTime: 540,
+        numEnemies: 6,
+        enemyType: "dart",
+        formation: "column",
+        position: 120,
+      }, {
+        baseSpawnTime: 540,
+        numEnemies: 6,
+        enemyType: "dart",
+        formation: "column",
+        position: 360,
+      }, {
+        baseSpawnTime: 900,
+        numEnemies: 9,
+        enemyType: "drone",
+        formation: "vee",
+        position: 240,
+      }, {
+        baseSpawnTime: 1020,
+        numEnemies: 2,
+        enemyType: "turret",
+        formation: "line",
+        position: 240,
+      }, {
+        baseSpawnTime: 1320,
+        numEnemies: 8,
+        enemyType: "lancer",
+        formation: "pincer",
+        position: 0,
+      }, {
+        baseSpawnTime: 1560,
+        numEnemies: 8,
+        enemyType: "dart",
+        formation: "vee",
+        position: 240,
+      }],
+    },
+  ];
   constructor(
     private readonly hud: Hud,
     private readonly options: LaunchOptions,
@@ -113,11 +366,11 @@ export class GameScene extends Phaser.Scene implements Arena {
     if (this.mode === "title") {
       this.hud.setMode("title");
       this.hud.setRoute([
-        "Outer Drift",
-        "Shatter Belt",
-        "Gun Lanes",
-        "Lancer Gate",
-        "Last Approach",
+        this.gameLevels[0].name,
+        this.gameLevels[1].name,
+        this.gameLevels[2].name,
+        this.gameLevels[3].name,
+        this.gameLevels[4].name,
         "The Warden",
       ]);
       this.hud.setSector(-1);
@@ -390,25 +643,11 @@ export class GameScene extends Phaser.Scene implements Arena {
     if (this.boss) return;
     const t = this.now - this.sectorStart;
     if (
-      this.sector === 0 && t >= 1560 && (this.enemies.length === 0 || t >= 1800)
+      t >= this.gameLevels[this.sector].length &&
+      (this.enemies.length === 0 ||
+        t >= (this.gameLevels[this.sector].length + 240))
     ) {
-      this.startSector(1);
-    } else if (
-      this.sector === 1 && t >= 1800 && (this.enemies.length === 0 || t >= 2040)
-    ) {
-      this.startSector(2);
-    } else if (
-      this.sector === 2 && t >= 1920 && (this.enemies.length === 0 || t >= 2160)
-    ) {
-      this.startSector(3);
-    } else if (
-      this.sector === 3 && t >= 1920 && (this.enemies.length === 0 || t >= 2160)
-    ) {
-      this.startSector(4);
-    } else if (
-      this.sector === 4 && t >= 2040 && (this.enemies.length === 0 || t >= 2280)
-    ) {
-      this.startSector(5);
+      this.startSector(this.sector + 1);
     }
   }
 
@@ -416,16 +655,11 @@ export class GameScene extends Phaser.Scene implements Arena {
     this.sector = index;
     this.hud.setSector(index);
     this.sectorStart = this.now;
-    if (index === 0) {
-      this.hud.announce("Sector 1: Outer Drift", "Scouts ahead");
-    } else if (index === 1) {
-      this.hud.announce("Sector 2: Shatter Belt", "Divers incoming");
-    } else if (index === 2) {
-      this.hud.announce("Sector 3: Gun Lanes", "Turrets online");
-    } else if (index === 3) {
-      this.hud.announce("Sector 4: Lancer Gate", "Crossfire");
-    } else if (index === 4) {
-      this.hud.announce("Sector 5: Last Approach", "Everything they have");
+    if (index < this.gameLevels.length) {
+      this.hud.announce(
+        `Sector ${index + 1}: ${this.gameLevels[index].name}`,
+        `${this.gameLevels[index].subtitle}`,
+      );
     } else {
       this.hud.announce("WARNING", "The Warden approaches");
       this.hud.shudder(true);
@@ -436,12 +670,13 @@ export class GameScene extends Phaser.Scene implements Arena {
 
   private spawnWave(
     time: number,
-    baseSpawnTime: number,
-    numEnemies: number,
-    enemyType: string,
-    formation: string,
-    position: number,
+    wave: WaveInfo,
   ) {
+    const baseSpawnTime = wave.baseSpawnTime;
+    const numEnemies = wave.numEnemies;
+    const enemyType = wave.enemyType;
+    const formation = wave.formation;
+    const position = wave.position;
     let x: number;
     let score: number;
     let radius: number;
@@ -530,46 +765,11 @@ export class GameScene extends Phaser.Scene implements Arena {
 
   private updateProgression(): void {
     const t = this.now - this.sectorStart;
-    if (this.sector === 0) {
-      this.spawnWave(t, 60, 4, "drone", "line", 240);
-      this.spawnWave(t, 360, 5, "drone", "vee", 168);
-      this.spawnWave(t, 660, 5, "drone", "vee", 312);
-      this.spawnWave(t, 960, 6, "drone", "line", 240);
-      this.spawnWave(t, 1200, 4, "drone", "column", 120);
-      this.spawnWave(t, 1260, 4, "drone", "column", 360);
-    } else if (this.sector === 1) {
-      this.spawnWave(t, 60, 6, "drone", "vee", 240);
-      this.spawnWave(t, 300, 4, "dart", "line", 240);
-      this.spawnWave(t, 600, 5, "dart", "column", 144);
-      this.spawnWave(t, 720, 5, "dart", "column", 336);
-      this.spawnWave(t, 1020, 7, "drone", "line", 240);
-      this.spawnWave(t, 1140, 5, "dart", "vee", 240);
-      this.spawnWave(t, 1440, 6, "dart", "line", 240);
-    } else if (this.sector === 2) {
-      this.spawnWave(t, 60, 1, "turret", "line", 240);
-      this.spawnWave(t, 240, 6, "drone", "vee", 240);
-      this.spawnWave(t, 540, 2, "turret", "line", 240);
-      this.spawnWave(t, 840, 6, "dart", "column", 240);
-      this.spawnWave(t, 1080, 2, "turret", "line", 240);
-      this.spawnWave(t, 1140, 6, "drone", "line", 240);
-      this.spawnWave(t, 1500, 3, "turret", "line", 240);
-    } else if (this.sector === 3) {
-      this.spawnWave(t, 60, 4, "lancer", "pincer", 0);
-      this.spawnWave(t, 360, 6, "dart", "vee", 240);
-      this.spawnWave(t, 600, 6, "lancer", "pincer", 0);
-      this.spawnWave(t, 780, 2, "turret", "line", 240);
-      this.spawnWave(t, 1140, 6, "lancer", "pincer", 0);
-      this.spawnWave(t, 1260, 8, "drone", "vee", 240);
-      this.spawnWave(t, 1560, 8, "dart", "line", 240);
-    } else if (this.sector === 4) {
-      this.spawnWave(t, 60, 3, "turret", "line", 240);
-      this.spawnWave(t, 180, 6, "lancer", "pincer", 0);
-      this.spawnWave(t, 540, 6, "dart", "column", 120);
-      this.spawnWave(t, 540, 6, "dart", "column", 360);
-      this.spawnWave(t, 900, 9, "drone", "vee", 240);
-      this.spawnWave(t, 1020, 2, "turret", "line", 240);
-      this.spawnWave(t, 1320, 8, "lancer", "pincer", 0);
-      this.spawnWave(t, 1560, 8, "dart", "vee", 240);
+    if (this.sector >= this.gameLevels.length) {
+      return;
+    }
+    for (let i = 0; i < this.gameLevels[this.sector].waves.length; ++i) {
+      this.spawnWave(t, this.gameLevels[this.sector].waves[i]);
     }
   }
 
