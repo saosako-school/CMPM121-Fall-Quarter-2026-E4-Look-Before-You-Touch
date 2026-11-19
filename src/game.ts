@@ -7,7 +7,12 @@ import {
   Player,
   WIDTH,
 } from "./actors.ts";
-import { ShmupBoss, ShmupPowerUp, ShmupPrefabSprite } from "./prefab.ts";
+import {
+  EnemyInfo,
+  ShmupBoss,
+  ShmupPowerUp,
+  ShmupPrefabSprite,
+} from "./prefab.ts";
 import type { Hud } from "./hud.ts";
 import type { LaunchOptions } from "./main.ts";
 import { AutoPilot, KeyboardPilot, type Pilot } from "./pilots.ts";
@@ -16,7 +21,7 @@ import { loadSounds, play } from "./sounds.ts";
 import { makeTextures, TINTS } from "./textures.ts";
 import { Backdrop } from "./backdrop.ts";
 
-const TICK_MS = 1000 / 60;
+const TICK_MS = 1000 / 6000;
 const START_LIVES = 3;
 const BOSS_WARNING_TICKS = 200;
 const VICTORY_TICKS = 180;
@@ -32,6 +37,7 @@ const STORY: [number, string][] = [
 const WARP_AT = 9;
 const CREDITS_AT = 11;
 const RETURN_AT = 18;
+type EnemyRecord = Record<string, EnemyInfo>;
 interface WaveInfo {
   baseSpawnTime: number;
   numEnemies: number;
@@ -45,6 +51,12 @@ interface Level {
   length: number;
   waves: WaveInfo[];
 }
+const enemyRecord: EnemyRecord = {
+  "drone": { hp: 2, score: 100, radius: 13, dropChance: 0.015 },
+  "dart": { hp: 1, score: 150, radius: 12, dropChance: 0.015 },
+  "turret": { hp: 12, score: 400, radius: 19, dropChance: 0.3 },
+  "lancer": { hp: 4, score: 250, radius: 15, dropChance: 0.06 },
+};
 /**
  * The whole game. mode is one of "title", "play", "attract" or "cutscene";
  * switching modes fades out and restarts this scene in the new mode.
@@ -578,13 +590,14 @@ export class GameScene extends Phaser.Scene implements Arena {
         this,
         x,
         y,
+        enemyRecord["drone"],
         "drone",
-        2,
-        100,
-        13,
-        0.015,
-        true,
-        false,
+        //2,
+        //100,
+        //13,
+        //0.015,
+        //true,
+        //false,
         x,
         x < WIDTH / 2 ? 1 : -1,
       ),
@@ -678,45 +691,8 @@ export class GameScene extends Phaser.Scene implements Arena {
     const formation = wave.formation;
     const position = wave.position;
     let x: number;
-    let score: number;
-    let radius: number;
-    let canShoot: boolean;
-    let dropChance: number;
-    let hp: number;
     let spawnTime: number;
     let y: number;
-    switch (enemyType) {
-      case "drone":
-        score = 100;
-        radius = 13;
-        canShoot = true;
-        dropChance = 0.015;
-        hp = 2;
-        break;
-      case "dart":
-        score = 150;
-        radius = 12;
-        canShoot = false;
-        dropChance = 0.015;
-        hp = 1;
-        break;
-      case "turret":
-        score = 400;
-        radius = 19;
-        canShoot = true;
-        dropChance = 0.3;
-        hp = 12;
-        break;
-      case "lancer":
-        score = 250;
-        radius = 15;
-        canShoot = true;
-        dropChance = 0.06;
-        hp = 4;
-        break;
-      default:
-        throw new Error("spawnWave(): enemyType not recognized");
-    }
     for (let i = 0; i < numEnemies; ++i) {
       switch (formation) {
         case "line":
@@ -748,13 +724,8 @@ export class GameScene extends Phaser.Scene implements Arena {
           this,
           x,
           y,
+          enemyRecord[enemyType],
           enemyType,
-          hp,
-          score,
-          radius,
-          dropChance,
-          canShoot,
-          false,
           x,
           i % 2 === 0 ? 1 : -1,
         );
