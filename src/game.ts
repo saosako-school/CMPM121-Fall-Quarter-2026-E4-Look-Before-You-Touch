@@ -8,10 +8,11 @@ import {
   WIDTH,
 } from "./actors.ts";
 import {
+  aim,
   EnemyInfo,
   ShmupBoss,
+  ShmupEnemy,
   ShmupPowerUp,
-  ShmupPrefabSprite,
 } from "./prefab.ts";
 import type { Hud } from "./hud.ts";
 import type { LaunchOptions } from "./main.ts";
@@ -21,7 +22,7 @@ import { loadSounds, play } from "./sounds.ts";
 import { makeTextures, TINTS } from "./textures.ts";
 import { Backdrop } from "./backdrop.ts";
 
-const TICK_MS = 1000 / 6000;
+const TICK_MS = 1000 / 60;
 const START_LIVES = 3;
 const BOSS_WARNING_TICKS = 200;
 const VICTORY_TICKS = 180;
@@ -52,10 +53,70 @@ interface Level {
   waves: WaveInfo[];
 }
 const enemyRecord: EnemyRecord = {
-  "drone": { hp: 2, score: 100, radius: 13, dropChance: 0.015 },
-  "dart": { hp: 1, score: 150, radius: 12, dropChance: 0.015 },
-  "turret": { hp: 12, score: 400, radius: 19, dropChance: 0.3 },
-  "lancer": { hp: 4, score: 250, radius: 15, dropChance: 0.06 },
+  "drone": {
+    hp: 2,
+    score: 100,
+    radius: 13,
+    dropChance: 0.015,
+    moveFunction: (enemy, _arena) => {
+      enemy.y += 1.5;
+      enemy.x = enemy.homeX + Math.sin(enemy.age * 0.045) * 46 * enemy.side;
+    },
+    fireFunction: (enemy, arena) => {
+      if (enemy.age % 100 !== 60 || !arena.rng.chance(0.35)) return;
+      arena.fire(enemy.x, enemy.y, aim(enemy, arena), 2.4);
+    },
+  },
+  "dart": {
+    hp: 1,
+    score: 150,
+    radius: 12,
+    dropChance: 0.015,
+    moveFunction: (enemy, arena) => {
+      if (enemy.age < 50) {
+        enemy.y += 1.2;
+      } else {
+        if (enemy.age === 50) {
+          enemy.heading = Math.sign(arena.player.x - enemy.x) * 1.4;
+        }
+        enemy.y += 5.2;
+        enemy.x += enemy.heading;
+      }
+    },
+    fireFunction: (_enemy, _arena) => {},
+  },
+  "turret": {
+    hp: 12,
+    score: 400,
+    radius: 19,
+    dropChance: 0.3,
+    moveFunction: (enemy, _arena) => {
+      if (enemy.age < 70) enemy.y += 1.6;
+      else if (enemy.age > 420) enemy.y += 1.2;
+      enemy.rotation += 0.02;
+    },
+    fireFunction: (enemy, arena) => {
+      const t = enemy.age - 80;
+      if (t < 0 || enemy.age > 420 || t % 100 > 40 || t % 8 !== 0) return;
+      arena.fire(enemy.x, enemy.y, aim(enemy, arena), 3.4);
+    },
+  },
+  "lancer": {
+    hp: 4,
+    score: 250,
+    radius: 15,
+    dropChance: 0.06,
+    moveFunction: (enemy, _arena) => {
+      enemy.x += 2.4 * enemy.side;
+      enemy.y += 0.35;
+    },
+    fireFunction: (enemy, arena) => {
+      if (enemy.age % 40 !== 20 || enemy.x < 20 || enemy.x > WIDTH - 20) return;
+      for (const spread of [-0.25, 0, 0.25]) {
+        arena.fire(enemy.x, enemy.y + 8, Math.PI / 2 + spread, 2.6);
+      }
+    },
+  },
 };
 /**
  * The whole game. mode is one of "title", "play", "attract" or "cutscene";
@@ -69,7 +130,7 @@ export class GameScene extends Phaser.Scene implements Arena {
   private run;
   private pilot!: Pilot;
   private backdrop!: Backdrop;
-  private enemies: ShmupPrefabSprite[] = [];
+  private enemies: ShmupEnemy[] = [];
   private shots: Bullet[] = [];
   private bullets: Bullet[] = [];
   private pickups: ShmupPowerUp[] = [];
@@ -586,18 +647,12 @@ export class GameScene extends Phaser.Scene implements Arena {
 
   summon(_kind: string, x: number, y: number): void {
     this.enemies.push(
-      new ShmupPrefabSprite(
+      new ShmupEnemy(
         this,
         x,
         y,
         enemyRecord["drone"],
         "drone",
-        //2,
-        //100,
-        //13,
-        //0.015,
-        //true,
-        //false,
         x,
         x < WIDTH / 2 ? 1 : -1,
       ),
@@ -720,7 +775,7 @@ export class GameScene extends Phaser.Scene implements Arena {
           throw new Error("spawnWave(): formation not recognized");
       }
       if (time === spawnTime) {
-        const enemy = new ShmupPrefabSprite(
+        const enemy = new ShmupEnemy(
           this,
           x,
           y,
@@ -784,7 +839,7 @@ export class GameScene extends Phaser.Scene implements Arena {
     }
   }
 
-  private destroyEnemy(enemy: ShmupPrefabSprite): void {
+  private destroyEnemy(enemy: ShmupEnemy): void {
     enemy.setActive(false);
     this.run.score += enemy.score;
     this.run.kills++;
@@ -797,7 +852,7 @@ export class GameScene extends Phaser.Scene implements Arena {
       const kind = this.player.power < 3 && this.rng.chance(0.5)
         ? "spread"
         : "shield";
-      this.pickups.push(new ShmupPowerUp(this, enemy.x, enemy.y, kind));
+      this.pickups.push(new ShmupPowerUp(this, enemy.x, enemy.y, kind, 14));
     }
   }
 

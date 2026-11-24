@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { Actor, type Arena, WIDTH } from "./actors.ts";
 
-function aim(from: { x: number; y: number }, arena: Arena): number {
+export function aim(from: { x: number; y: number }, arena: Arena): number {
   return Math.atan2(arena.player.y - from.y, arena.player.x - from.x);
 }
 
@@ -10,43 +10,75 @@ export interface EnemyInfo {
   score: number;
   radius: number;
   dropChance: number;
+  moveFunction: (enemy: ShmupEnemy, arena: Arena) => void;
+  fireFunction: (enemy: ShmupEnemy, arena: Arena) => void;
 }
 
 /**
  * Base class for everything the player can shoot or pick up: enemies, the
  * boss and power-ups. kind is the prefab's name and also its texture key.
  */
-export class ShmupPrefabSprite extends Actor {
+class ShmupSprite extends Actor {
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    public kind: string,
+    radius: number,
+  ) {
+    super(scene, x, y, kind, radius);
+  }
+  step(_arena: Arena): void {
+    console.error("define method step() in subclass");
+  }
+}
+
+export class ShmupPowerUp extends ShmupSprite {
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    kind: string,
+    radius: number,
+  ) {
+    super(scene, x, y, kind, radius);
+  }
+  override step(_arena?: Arena): void {
+    this.age++;
+    this.y += 1.1;
+    this.rotation += 0.04;
+    this.setScale(1 + 0.12 * Math.sin(this.age * 0.15));
+  }
+}
+
+export class ShmupEnemy extends ShmupSprite {
   maxHp: number;
+  enemyRecord: EnemyInfo;
   public hp: number;
   public dropChance: number;
   public score: number;
-  //public kind: string;
   flash = 0;
   heading = 0;
-  // spin: turrets rotate using this
-  spin = 0;
-
   constructor(
     scene: Phaser.Scene,
     x: number,
     y: number,
     enemyInfo: EnemyInfo,
-    public kind: string,
+    kind: string,
     public homeX: number,
     public side: number,
   ) {
     super(scene, x, y, kind, enemyInfo.radius);
+    this.enemyRecord = enemyInfo;
     this.maxHp = enemyInfo.hp;
     this.hp = enemyInfo.hp;
     this.dropChance = enemyInfo.dropChance;
     this.score = enemyInfo.score;
   }
-
-  step(arena: Arena): void {
+  override step(arena: Arena): void {
     this.age++;
     const { x, y } = this;
-    this.moveByKind(arena);
+    this.move(arena);
     this.vx = this.x - x;
     this.vy = this.y - y;
     this.fireWeapon(arena);
@@ -55,77 +87,23 @@ export class ShmupPrefabSprite extends Actor {
       this.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     } else this.clearTint();
   }
-
-  moveByKind(arena: Arena): void {
-    switch (this.kind) {
-      case "drone":
-        this.y += 1.5;
-        this.x = this.homeX + Math.sin(this.age * 0.045) * 46 * this.side;
-        break;
-      case "dart":
-        // Drift in slowly, then commit to a dive toward where the player was.
-        if (this.age < 50) {
-          this.y += 1.2;
-        } else {
-          if (this.age === 50) {
-            this.heading = Math.sign(arena.player.x - this.x) * 1.4;
-          }
-          this.y += 5.2;
-          this.x += this.heading;
-        }
-        break;
-      case "turret":
-        if (this.age < 70) this.y += 1.6;
-        else if (this.age > 420) this.y += 1.2;
-        this.rotation += 0.02;
-        break;
-      case "lancer":
-        this.x += 2.4 * this.side;
-        this.y += 0.35;
-        break;
-    }
+  move(arena: Arena) {
+    this.enemyRecord.moveFunction(this, arena);
   }
-
-  fireWeapon(arena: Arena): void {
-    switch (this.kind) {
-      case "drone":
-        if (this.age % 100 !== 60 || !arena.rng.chance(0.35)) return;
-        arena.fire(this.x, this.y, aim(this, arena), 2.4);
-        break;
-      case "turret": {
-        const t = this.age - 80;
-        if (t < 0 || this.age > 420 || t % 100 > 40 || t % 8 !== 0) return;
-        arena.fire(this.x, this.y, aim(this, arena), 3.4);
-        break;
-      }
-      case "lancer":
-        if (this.age % 40 !== 20 || this.x < 20 || this.x > WIDTH - 20) return;
-        for (const spread of [-0.25, 0, 0.25]) {
-          arena.fire(this.x, this.y + 8, Math.PI / 2 + spread, 2.6);
-        }
-        break;
-    }
+  fireWeapon(arena: Arena) {
+    this.enemyRecord.fireFunction(this, arena);
   }
-
   get fraction(): number {
     return this.hp / this.maxHp;
   }
-
-  phase(): number {
-    return 1;
-  }
-
-  /** Returns true when this hit destroys the prefab. */
-  takeDamage(amount: number): boolean {
-    /*if (this.isPickup) return false;*/
+  takeDamage(amount: number) {
     this.hp -= amount;
     this.flash = 3;
     return this.hp <= 0;
   }
 }
-
-/** The Warden: a three-phase finale whose attacks escalate as it weakens. */
-export class ShmupBoss extends ShmupPrefabSprite {
+export class ShmupBoss extends ShmupEnemy {
+  spin = 0;
   readonly core: Phaser.GameObjects.Image;
 
   constructor(scene: Phaser.Scene) {
@@ -133,7 +111,14 @@ export class ShmupBoss extends ShmupPrefabSprite {
       scene,
       WIDTH / 2,
       -90,
-      { hp: 900, score: 10000, radius: 46, dropChance: 0 },
+      {
+        hp: 900,
+        score: 10000,
+        radius: 46,
+        dropChance: 0,
+        moveFunction: () => {},
+        fireFunction: () => {},
+      },
       "boss",
       WIDTH / 2,
       1,
@@ -143,11 +128,10 @@ export class ShmupBoss extends ShmupPrefabSprite {
     );
   }
 
-  override phase(): number {
+  phase(): number {
     return this.fraction > 2 / 3 ? 1 : this.fraction > 1 / 3 ? 2 : 3;
   }
 
-  /** The Warden ignores damage until it has finished descending. */
   get arrived(): boolean {
     return this.age > 150;
   }
@@ -155,9 +139,6 @@ export class ShmupBoss extends ShmupPrefabSprite {
   override takeDamage(amount: number): boolean {
     return this.arrived ? super.takeDamage(amount) : false;
   }
-
-  // the Warden attacks from step() instead
-  override fireWeapon(): void {}
 
   override step(arena: Arena): void {
     super.step(arena);
@@ -207,39 +188,5 @@ export class ShmupBoss extends ShmupPrefabSprite {
   override destroy(fromScene?: boolean): void {
     this.core.destroy(fromScene);
     super.destroy(fromScene);
-  }
-}
-
-export class ShmupPowerUp extends ShmupPrefabSprite {
-  constructor(scene: Phaser.Scene, x: number, y: number, kind: string) {
-    super(
-      scene,
-      x,
-      y,
-      { hp: 0, score: 0, radius: 14, dropChance: 0 },
-      kind,
-      x,
-      1,
-    );
-  }
-
-  override step(): void {
-    this.age++;
-    this.y += 1.1;
-    this.rotation += 0.04;
-    this.setScale(1 + 0.12 * Math.sin(this.age * 0.15));
-  }
-
-  // power-ups can't shoot
-  override fireWeapon(): void {}
-
-  // power-ups can't be hurt
-  override takeDamage(): boolean {
-    return false;
-  }
-
-  // power-ups have no boss phases
-  override phase(): number {
-    return 0;
   }
 }
