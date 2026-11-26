@@ -1,8 +1,11 @@
 import Phaser from "phaser";
 import { HEIGHT, WIDTH } from "./actors.ts";
 import { Hud } from "./hud.ts";
-import { GameScene } from "./game.ts";
 import "./style.css";
+import { Boot } from "./scenes/boot.ts";
+import { Title } from "./scenes/title.ts";
+import { Play } from "./scenes/play.ts";
+import { Cutscene } from "./scenes/cutscene.ts";
 
 /**
  * URL switches for self-play, e.g. ?attract&speed=4&seed=7
@@ -17,13 +20,13 @@ export interface LaunchOptions {
 }
 
 const params = new URLSearchParams(location.search);
-const options: LaunchOptions = {
+export const options: LaunchOptions = {
   attract: params.has("attract"),
   speed: Phaser.Math.Clamp(Number(params.get("speed") ?? 1) || 1, 1, 8),
   seed: Number(params.get("seed") ?? 121) || 121,
 };
 
-const hud = new Hud();
+export const hud = new Hud();
 
 new Phaser.Game({
   type: Phaser.WEBGL,
@@ -32,5 +35,5 @@ new Phaser.Game({
   height: HEIGHT,
   backgroundColor: "#04020c",
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [new GameScene(hud, options)],
+  scene: [new Boot(hud, options), new Title(), new Play(), new Cutscene()],
 });
