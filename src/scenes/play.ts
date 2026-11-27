@@ -375,24 +375,24 @@ function sweep<T extends Actor>(
 export class Play extends Phaser.Scene implements Arena {
   rng!: Rng;
   player!: Player;
-  now: number;
-  private playData: PlayData;
-  private carry: number;
-  private backdrop: Backdrop;
+  now: number = 0;
+  private playData!: PlayData;
+  private carry: number = 0;
+  private backdrop!: Backdrop;
   private sparks!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private pilot: Pilot;
-  private shots: Bullet[];
-  private bullets: Bullet[];
-  private pickups: ShmupPowerUp[];
-  private gameOver: boolean;
-  private victoryAt: number;
-  private boss: ShmupBoss | null;
-  private enemies: ShmupEnemy[];
-  private speed: number;
-  private sector: number;
-  private sectorStart: number;
-  private bossDueAt: number;
-  private leaving: boolean;
+  private pilot!: Pilot;
+  private shots: Bullet[] = [];
+  private bullets: Bullet[] = [];
+  private pickups: ShmupPowerUp[] = [];
+  private gameOver: boolean = false;
+  private victoryAt: number = 0;
+  private boss: ShmupBoss | null = null;
+  private enemies: ShmupEnemy[] = [];
+  private speed: number = 1;
+  private sector: number = -1;
+  private sectorStart: number = 0;
+  private bossDueAt: number = 0;
+  private leaving: boolean = false;
   constructor() {
     super("Play");
   }

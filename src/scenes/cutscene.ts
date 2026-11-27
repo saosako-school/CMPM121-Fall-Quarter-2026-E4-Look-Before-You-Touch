@@ -16,9 +16,9 @@ const CREDITS_AT = 11;
 const RETURN_AT = 18;
 
 export class Cutscene extends Phaser.Scene {
-  playData: PlayData;
-  backdrop: Backdrop;
-  leaving: boolean;
+  playData!: PlayData;
+  backdrop!: Backdrop;
+  leaving: boolean = false;
   constructor() {
     super("Cutscene");
   }

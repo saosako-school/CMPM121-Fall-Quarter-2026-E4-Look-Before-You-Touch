@@ -18,9 +18,9 @@ export interface TitleData {
 export class Title extends Phaser.Scene {
   private countdown!: Phaser.GameObjects.Text;
   private backdrop!: Backdrop;
-  private idle: number;
-  private titleData: TitleData;
-  private leaving: boolean;
+  private idle: number = 0;
+  private titleData!: TitleData;
+  private leaving: boolean = false;
   constructor() {
     super("Title");
   }
